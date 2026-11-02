@@ -10,11 +10,14 @@ namespace AvatarLab
         public LabApp app;
         public bool ControlActive, follow = true, animateWalk = true;
         public float speed = 1.8f, runMultiplier = 2, jumpHeight = .7f;
+        public float acceleration=12, braking=18, animationRate=1;
         public Transform Root => root;
         public CharacterController Controller => controller;
         Transform root, model;
         CharacterController controller;
-        float vertical, gait, movement,standingHeight;
+        float vertical,standingHeight,simulationTime,lastGroundTime=-100,jumpQueuedUntil=-100,gaitSpeed;
+        Vector3 horizontalVelocity;
+        bool jumpConsumed;
         public bool Crouched {get;private set;}
         public bool Grounded=>controller!=null && controller.isGrounded;
         public Vector3 Velocity {get;private set;}
@@ -26,7 +29,6 @@ namespace AvatarLab
         float cameraYaw,cameraPitch=15;
         readonly RaycastHit[] cameraHits=new RaycastHit[64];
         readonly Collider[] headroom=new Collider[32];
-        readonly Dictionary<HumanBodyBones, Transform> bones = new Dictionary<HumanBodyBones, Transform>();
         public void Attach(GameObject avatar)
         {
             Detach(); model = avatar.transform;
@@ -35,15 +37,11 @@ namespace AvatarLab
             float height = Mathf.Clamp(avatar.GetComponent<AvatarDefinition>().eyeHeight * Mathf.Abs(model.lossyScale.y) + .12f, .5f, 4);
             standingHeight=height; controller.height = height; controller.radius = height * .16f; controller.center = Vector3.up * height * .5f;
             controller.stepOffset = Mathf.Min(.3f, height * .25f); controller.skinWidth = .02f; controller.slopeLimit = 45;
-            var a = avatar.GetComponent<AvatarDefinition>().animator;
-            if (a != null && a.isHuman)
-                foreach (var which in new[] { HumanBodyBones.LeftUpperLeg, HumanBodyBones.RightUpperLeg, HumanBodyBones.LeftLowerLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.LeftUpperArm, HumanBodyBones.RightUpperArm })
-                { var bone = a.GetBoneTransform(which); if (bone != null) bones[which] = bone; }
-            vertical = 0; movement = 0;
+            ResetMotion();
         }
         public void Detach()
         {
-            SetControl(false); bones.Clear();
+            SetControl(false);
             if (model != null) model.SetParent(null, true);
             if (root != null) { root.gameObject.SetActive(false); DestroyImmediate(root.gameObject); }
             model = null; root = null; controller = null;
@@ -69,7 +67,7 @@ namespace AvatarLab
             }
             ControlActive = active && root != null;
             app?.driver?.SetGameLocomotion(ControlActive && animateWalk && !app.tracking.VrActive);
-            if (!ControlActive) { vertical = 0; app?.driver?.Set("VelocityX", 0); app?.driver?.Set("VelocityZ", 0); app?.driver?.Set("VelocityMagnitude", 0); app?.driver?.Set("VelocityY",0); app?.driver?.Set("AngularY",0); Velocity=Vector3.zero; if(controller!=null) Resize(false); app?.driver?.Set("Upright",Crouched?.6f:1); }
+            if (!ControlActive) { ResetMotion(); app?.driver?.Set("VelocityX", 0); app?.driver?.Set("VelocityZ", 0); app?.driver?.Set("VelocityMagnitude", 0); app?.driver?.Set("VelocityY",0); app?.driver?.Set("AngularY",0); app?.driver?.Set("VRCStageGait",0); if(controller!=null) Resize(false); app?.driver?.Set("Upright",Crouched?.6f:1); }
             Cursor.lockState = ControlActive ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !ControlActive;
             if (app != null && app.room != null) app.room.gameLook = ControlActive;
         }
@@ -84,7 +82,6 @@ namespace AvatarLab
         {
             if (Input.GetKeyDown(KeyCode.F2)) SetControl(!ControlActive);
             if (Input.GetKeyDown(KeyCode.Escape) || !Application.isFocused) SetControl(false);
-            movement = 0;
             if (root == null || controller == null) return;
             if (!ControlActive) return;
             var input = Vector2.zero;
@@ -127,20 +124,35 @@ namespace AvatarLab
             var right=Vector3.Cross(Vector3.up,forward).normalized;
             var direction=forward*input.y+right*input.x;
             float currentSpeed=speed*(Crouched?.5f:run?runMultiplier:1);
-            if(controller.isGrounded && vertical<0) vertical=-2;
-            if(jump && controller.isGrounded) vertical=Mathf.Sqrt(2*Mathf.Abs(Physics.gravity.y)*jumpHeight);
+            simulationTime+=dt;
+            if(controller.isGrounded && vertical<=0) {vertical=-2;lastGroundTime=simulationTime;jumpConsumed=false;}
+            if(jump) jumpQueuedUntil=simulationTime+.12f;
+            if(!jumpConsumed && jumpQueuedUntil>=simulationTime && simulationTime-lastGroundTime<=.1f)
+            {vertical=Mathf.Sqrt(2*Mathf.Abs(Physics.gravity.y)*jumpHeight);jumpConsumed=true;jumpQueuedUntil=-100;}
+            float response=input.sqrMagnitude>.001f?acceleration:braking;
+            if(!controller.isGrounded) response*=.35f;
+            horizontalVelocity=Vector3.MoveTowards(horizontalVelocity,direction*currentSpeed,response*dt);
             vertical+=Physics.gravity.y*dt;
             var previous=root.position; float previousYaw=root.eulerAngles.y;
-            var flags=Move((direction*currentSpeed+Vector3.up*vertical)*dt);
+            var flags=Move((horizontalVelocity+Vector3.up*vertical)*dt);
             if((flags & CollisionFlags.Above)!=0 && vertical>0) vertical=0;
             if(controller.isGrounded && vertical<0) vertical=-2;
-            if(direction.sqrMagnitude>.01f && !app.tracking.VrActive) root.rotation=Quaternion.Slerp(root.rotation,Quaternion.LookRotation(direction),1-Mathf.Exp(-12*dt));
+            if(horizontalVelocity.sqrMagnitude>.01f && !app.tracking.VrActive)
+            {
+                var facing=Quaternion.LookRotation(horizontalVelocity)*Quaternion.Euler(0,-model.localEulerAngles.y,0);
+                root.rotation=Quaternion.Slerp(root.rotation,facing,1-Mathf.Exp(-12*dt));
+            }
             Velocity=(root.position-previous)/dt; if(controller.isGrounded) Velocity=new Vector3(Velocity.x,0,Velocity.z);
-            var local=root.InverseTransformDirection(Velocity); movement=Vector3.ProjectOnPlane(Velocity,Vector3.up).magnitude;
+            var local=Quaternion.Inverse(Quaternion.Euler(0,model.eulerAngles.y,0))*Velocity;
+            float movement=Vector3.ProjectOnPlane(Velocity,Vector3.up).magnitude;
+            float targetGait=movement/Mathf.Max(.1f,speed)*1.8f;
+            gaitSpeed=Mathf.MoveTowards(gaitSpeed,targetGait,24*dt);
+            app.driver?.Set("VRCStageGait",gaitSpeed);
+            app.driver?.Set("VRCStageRate",Mathf.Clamp(speed/1.8f*1.75f/standingHeight*animationRate,.35f,2.5f));
             app.driver?.Set("VelocityX",local.x); app.driver?.Set("VelocityZ",local.z); app.driver?.Set("VelocityY",Velocity.y);
-            app.driver?.Set("VelocityMagnitude",Velocity.magnitude); app.driver?.Set("Grounded",controller.isGrounded?1:0);
+            bool animationGrounded=controller.isGrounded || !jumpConsumed && vertical<=0 && simulationTime-lastGroundTime<.06f;
+            app.driver?.Set("VelocityMagnitude",Velocity.magnitude); app.driver?.Set("Grounded",animationGrounded?1:0);
             app.driver?.Set("Upright",Crouched?.6f:1); app.driver?.Set("AngularY",Mathf.DeltaAngle(previousYaw,root.eulerAngles.y)*Mathf.Deg2Rad/dt);
-            gait+=dt*9*movement/1.8f;
         }
 
         void LateUpdate()
@@ -168,7 +180,10 @@ namespace AvatarLab
             }
             room.orbit.SetPositionAndRotation(room.focus+backwards*actual,rotation);
         }
-        void Swing(HumanBodyBones which, float degrees) { if (bones.TryGetValue(which, out var t)) t.localRotation *= Quaternion.Euler(degrees, 0, 0); }
+        void ResetMotion()
+        {
+            vertical=0;horizontalVelocity=Velocity=Vector3.zero;gaitSpeed=0;lastGroundTime=jumpQueuedUntil=-100;jumpConsumed=false;
+        }
         public void DrawUI()
         {
             GUILayout.Label("Controle do avatar");
@@ -176,6 +191,8 @@ namespace AvatarLab
             if (GUILayout.Button(ControlActive ? "Liberar controle" : "Controlar avatar [F2]")) SetControl(!ControlActive);
             speed = StudioGui.Slider("Velocidade (m/s)", speed, .3f, 6); runMultiplier = StudioGui.Slider("Corrida", runMultiplier, 1, 3);
             jumpHeight = StudioGui.Slider("Altura do pulo", jumpHeight, .1f, 2);
+            acceleration=StudioGui.Slider("Aceleração",acceleration,4,25);braking=StudioGui.Slider("Frenagem",braking,6,30);
+            animationRate=StudioGui.Slider("Ritmo dos passos",animationRate,.5f,1.5f);
             follow = GUILayout.Toggle(follow, "Câmera acompanha o avatar"); animateWalk = GUILayout.Toggle(animateWalk, "Locomoção Humanoid Unity no modo jogo");
             cameraSensitivity=StudioGui.Slider("Sensibilidade do mouse",cameraSensitivity,.3f,6);
             cameraDistance=StudioGui.Slider("Distância da câmera de jogo",cameraDistance,.45f,10);
@@ -190,7 +207,7 @@ namespace AvatarLab
         public void Teleport(Vector3 position, Quaternion rotation)
         {
             if (root == null) return;
-            controller.enabled = false; root.SetPositionAndRotation(position, rotation); controller.enabled = true; vertical = 0;
+            controller.enabled = false; root.SetPositionAndRotation(position, rotation); controller.enabled = true; ResetMotion();
             if (app.solver != null) app.solver.Calibrated = false;
         }
         void OnDestroy() { Detach(); }

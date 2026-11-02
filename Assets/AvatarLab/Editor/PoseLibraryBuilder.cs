@@ -26,7 +26,7 @@ namespace AvatarLab.Editor
         {
             string path=Folder+"/"+id+".anim";var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(path);if(clip==null) {clip=new AnimationClip();AssetDatabase.CreateAsset(clip,path);}
             clip.ClearCurves();clip.name="AvatarLab • "+label;clip.frameRate=60;
-            float duration=pose?1:id=="dance"?3:id=="breathe"?4:id=="walk"?.9f:id=="run"?.6f:id=="land"?.4f:2;
+            float duration=pose?1:id=="dance"?3:id=="breathe"?4:id=="walk" || id=="crouchwalk"?.9f:id=="run"?.6f:id=="land"?.4f:2;
             int frames=pose?1:Mathf.CeilToInt(duration*60);var curves=new Dictionary<string,List<float>>();var names=HumanTrait.MuscleName;
             Action<string,float> add=(name,value)=>{if(!curves.TryGetValue(name,out var values)) curves[name]=values=new List<float>();values.Add(value);};Quaternion previous=Quaternion.identity;
             for(int frame=0;frame<=frames;frame++)

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.1 — smoother game locomotion
+
+- Added acceleration/braking, smoother direction reversals, speed/proportion-aware animation cadence and an adjustable step rate.
+- Separated jump ascent from falling, added an official Unity running-jump pose, and shortened landing recovery while moving.
+- Added a short jump buffer and ledge grace period; brief ground contact gaps no longer immediately trigger falling animation.
+- Matched the authored crouch-walk cycle/stride to its movement speed and added restrained opposing arm motion. Crouch remains a locally authored animation.
+- Corrected movement facing for avatars with a rotated prefab root; the C crouch key no longer also requests tracking calibration during game control.
+- Expanded locomotion validation for start/stop, custom speeds, reversal, moving jump/landing, imported yaw, ledge jumps and buffered landing jumps.
+
 ## 0.10.0 — VRCStage public alpha
 
 - Adopted the VRCStage name and a VTuber-first introduction: VRChat avatar Unity project → local package → studio → OBS, without VRM conversion.

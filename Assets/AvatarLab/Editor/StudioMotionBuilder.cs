@@ -29,19 +29,34 @@ namespace AvatarLab.Editor
             string path=Folder+"/Default.controller"; var existing=AssetDatabase.LoadAssetAtPath<AnimatorController>(path); if(existing!=null) AssetDatabase.DeleteAsset(path);
             var controller=AnimatorController.CreateAnimatorControllerAtPath(path);
             controller.AddParameter("VelocityMagnitude",AnimatorControllerParameterType.Float); controller.AddParameter("VelocityY",AnimatorControllerParameterType.Float); controller.AddParameter("Upright",AnimatorControllerParameterType.Float); controller.AddParameter("Grounded",AnimatorControllerParameterType.Bool);
-            controller.parameters=controller.parameters.Select(p=>{ if(p.name=="Grounded") p.defaultBool=true; if(p.name=="Upright") p.defaultFloat=1; return p; }).ToArray();
+            controller.AddParameter("VRCStageGait",AnimatorControllerParameterType.Float);controller.AddParameter("VRCStageRate",AnimatorControllerParameterType.Float);
+            controller.parameters=controller.parameters.Select(p=>{ if(p.name=="Grounded") p.defaultBool=true; if(p.name=="Upright" || p.name=="VRCStageRate") p.defaultFloat=1; return p; }).ToArray();
             var machine=controller.layers[0].stateMachine;
-            var standing=machine.AddState("Standing / walk / run"); standing.motion=Tree(controller,"Standing","VelocityMagnitude",new[]{Get(library,"stand_still"),Get(library,"walk_forward"),Get(library,"run_forward")},new[]{0f,1.8f,3.6f});
-            var crouch=machine.AddState("Crouch / crouch walk"); crouch.motion=Tree(controller,"Crouch","VelocityMagnitude",new[]{Get(library,"crouch_still"),Get(library,"crouch_walk_forward")},new[]{0f,.9f});
-            var jump=machine.AddState("Jump / falling"); jump.motion=Tree(controller,"Air","VelocityY",new[]{Get(library,"fall_long"),Get(library,"fall_short")},new[]{-2f,2f});
-            var land=machine.AddState("Landing"); land.motion=Get(library,"landing");
+            var standing=machine.AddState("Standing / walk / run"); standing.motion=Tree(controller,"Standing","VRCStageGait",new[]{Get(library,"stand_still"),Get(library,"walk_forward"),Get(library,"run_forward")},new[]{0f,1.8f,3.6f});
+            var crouch=machine.AddState("Crouch / crouch walk"); crouch.motion=Tree(controller,"Crouch","VRCStageGait",new[]{Get(library,"crouch_still"),Get(library,"crouch_walk_forward")},new[]{0f,.9f});
+            foreach(var state in new[]{standing,crouch}) {state.speedParameter="VRCStageRate";state.speedParameterActive=true;}
+            // Authored muscle-only crouch clips have no foot IK goals; enabling
+            // Unity's clip IK on them pulls feet toward a missing/default goal.
+            standing.iKOnFeet=true;
+            var jump=machine.AddState("Jump ascent"); jump.motion=Tree(controller,"Jump momentum","VRCStageGait",new[]{Get(library,"fall_short"),Official("RunForwardsJump_Frame02")},new[]{0f,3.6f});
+            var falling=machine.AddState("Falling");falling.motion=Get(library,"fall_long");
+            var land=machine.AddState("Landing"); land.motion=Get(library,"landing");land.speed=1.6f;land.iKOnFeet=true;
             Transition(standing,crouch,AnimatorConditionMode.Less,.7f,"Upright"); Transition(crouch,standing,AnimatorConditionMode.Greater,.7f,"Upright");
-            Transition(standing,jump,AnimatorConditionMode.IfNot,0,"Grounded"); Transition(crouch,jump,AnimatorConditionMode.IfNot,0,"Grounded");
-            Transition(jump,land,AnimatorConditionMode.If,0,"Grounded"); var finish=land.AddTransition(standing); finish.hasExitTime=true; finish.exitTime=.8f; finish.duration=.1f;
+            foreach(var state in new[]{standing,crouch,land})
+            {
+                Transition(state,jump,AnimatorConditionMode.IfNot,0,"Grounded").AddCondition(AnimatorConditionMode.Greater,0,"VelocityY");
+                Transition(state,falling,AnimatorConditionMode.IfNot,0,"Grounded").AddCondition(AnimatorConditionMode.Less,.01f,"VelocityY");
+            }
+            Transition(jump,falling,AnimatorConditionMode.Less,0,"VelocityY");
+            Transition(falling,jump,AnimatorConditionMode.Greater,.1f,"VelocityY").AddCondition(AnimatorConditionMode.IfNot,0,"Grounded");
+            Transition(jump,land,AnimatorConditionMode.If,0,"Grounded");Transition(falling,land,AnimatorConditionMode.If,0,"Grounded");
+            Transition(land,crouch,AnimatorConditionMode.Less,.7f,"Upright");
+            Transition(land,standing,AnimatorConditionMode.Greater,.15f,"VRCStageGait").AddCondition(AnimatorConditionMode.Greater,.7f,"Upright");
+            var finish=land.AddTransition(standing); finish.hasExitTime=true; finish.exitTime=.35f; finish.hasFixedDuration=true;finish.duration=.1f;finish.AddCondition(AnimatorConditionMode.Greater,.7f,"Upright");
             machine.defaultState=standing; library.defaultController=controller; EditorUtility.SetDirty(library); AssetDatabase.SaveAssets(); return library;
         }
         static AnimationClip Get(LabMotionLibrary l,string name)=>l.entries.First(e=>e.proxy=="proxy_"+name).clip;
-        static void Transition(AnimatorState a,AnimatorState b,AnimatorConditionMode mode,float threshold,string parameter) { var t=a.AddTransition(b); t.hasExitTime=false; t.duration=.12f; t.AddCondition(mode,threshold,parameter); }
+        static AnimatorStateTransition Transition(AnimatorState a,AnimatorState b,AnimatorConditionMode mode,float threshold,string parameter) { var t=a.AddTransition(b); t.hasExitTime=false; t.hasFixedDuration=true;t.duration=.1f; t.AddCondition(mode,threshold,parameter); return t; }
         static BlendTree Tree(AnimatorController owner,string name,string parameter,AnimationClip[] clips,float[] thresholds)
         {
             var tree=new BlendTree{name=name,blendType=BlendTreeType.Simple1D,blendParameter=parameter,useAutomaticThresholds=false}; AssetDatabase.AddObjectToAsset(tree,owner);
@@ -51,11 +66,7 @@ namespace AvatarLab.Editor
         {
             string file=name=="stand_still" || name.StartsWith("idle") || name.StartsWith("stand_still")?"Idle":name=="walk_forward"?"WalkForwards":name=="run_forward"?"RunForwards":name=="sprint_forward"?"SprintForwards":name=="fall_long"?"Falling":name=="fall_short"?"StandingJump_Frame02":name=="landing" || name=="land_quick"?"FallLand":name=="walk_backward"?"StrafeRightWalkBackwards":name.StartsWith("strafe_right")?"StrafeRight":null;
             if(file!=null)
-            {
-                var clips=AssetDatabase.LoadAllAssetsAtPath("Assets/ThirdParty/UnityCharacterMotion/f@"+file+".fbx").OfType<AnimationClip>().Where(c=>!c.name.StartsWith("__preview__") && !c.name.EndsWith("_Mirror")).ToArray();
-                if(clips.Length!=1 || !clips[0].isHumanMotion || clips[0].length<=0) throw new InvalidOperationException("Animação oficial Unity ausente/inválida: "+file);
-                return clips[0];
-            }
+                return Official(file);
             string path=Folder+"/"+name+".anim"; var clip=AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
             if(clip==null) { clip=new AnimationClip(); AssetDatabase.CreateAsset(clip,path); }
             clip.ClearCurves(); clip.name="AvatarLab "+name; clip.frameRate=60;
@@ -87,6 +98,12 @@ namespace AvatarLab.Editor
                 AnimationUtility.SetEditorCurve(clip,EditorCurveBinding.FloatCurve("",typeof(Animator),pair.Key),pair.Value);
             }
             var settings=AnimationUtility.GetAnimationClipSettings(clip); settings.loopTime=!landing; settings.loopBlend=false; settings.keepOriginalPositionY=true; settings.keepOriginalOrientation=true; AnimationUtility.SetAnimationClipSettings(clip,settings); EditorUtility.SetDirty(clip); return clip;
+        }
+        static AnimationClip Official(string file)
+        {
+            var clips=AssetDatabase.LoadAllAssetsAtPath("Assets/ThirdParty/UnityCharacterMotion/f@"+file+".fbx").OfType<AnimationClip>().Where(c=>!c.name.StartsWith("__preview__") && !c.name.EndsWith("_Mirror")).ToArray();
+            if(clips.Length!=1 || !clips[0].isHumanMotion || clips[0].length<=0) throw new InvalidOperationException("Animação oficial Unity ausente/inválida: "+file);
+            return clips[0];
         }
     }
 }

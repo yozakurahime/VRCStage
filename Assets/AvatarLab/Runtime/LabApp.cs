@@ -206,7 +206,7 @@ namespace AvatarLab
             if (Input.GetKeyDown(KeyCode.F1)) showUi = !showUi;
             if(!keyboardFocus && !motor.ControlActive && Input.GetKeyDown(KeyCode.F3)) photo.mainPreview=!photo.mainPreview;
             if (!keyboardFocus && Input.GetKeyDown(KeyCode.F)) { if (currentAvatar != null) room.Frame(currentAvatar); }
-            if (!keyboardFocus && Input.GetKeyDown(KeyCode.C)) solver?.Calibrate();
+            if (!keyboardFocus && !motor.ControlActive && Input.GetKeyDown(KeyCode.C)) solver?.Calibrate();
             if (Input.GetKeyDown(KeyCode.F12))
             {
                 string capture = Path.Combine(Application.persistentDataPath, "Captura-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".png");

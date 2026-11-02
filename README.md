@@ -6,7 +6,7 @@
 
 VRCStage is a standalone Windows studio for creators who want to stream with their existing VRChat avatar. Export your avatar once from its Unity project, open it locally in VRCStage, and send a clean camera to OBS. You do not need to convert the avatar to VRM or keep Unity and VRChat running during a stream.
 
-**Status: 0.10.0 alpha.** Previously developed as AvatarLab Offline. This is an independent project, not affiliated with VRChat Inc. It implements its own runtime; compatibility with the VRChat client is partial.
+**Status: 0.10.1 alpha.** Previously developed as AvatarLab Offline. This is an independent project, not affiliated with VRChat Inc. It implements its own runtime; compatibility with the VRChat client is partial.
 
 ```text
 Your avatar's Unity project
