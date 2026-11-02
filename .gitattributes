@@ -1,0 +1,12 @@
+* text=auto eol=lf
+*.cs text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.ps1 text eol=crlf
+*.fbx binary
+*.dll binary
+*.task binary
+*.png binary
+*.asset text eol=lf
+*.meta text eol=lf

@@ -1,0 +1,10 @@
+name: Feature request / Sugestão
+description: Describe a creator workflow you want to improve.
+body:
+  - type: textarea
+    id: workflow
+    attributes:
+      label: What are you trying to do?
+      description: Explain the workflow and the result you need; include devices or avatar features where relevant.
+    validations:
+      required: true

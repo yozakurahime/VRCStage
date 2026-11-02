@@ -1,0 +1,1 @@
+Unity Technologies Standard-Assets-Characters. Revision 8f185aa3c782d824976653dd6a6476312daad241. https://github.com/Unity-Technologies/Standard-Assets-Characters . Selected female Humanoid animation clips; original FBX and importer metadata. Companion License for Unity-dependent projects. No VRChat client assets.

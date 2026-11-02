@@ -1,0 +1,21 @@
+name: Bug report / Relatar problema
+description: Report reproducible behavior without uploading private avatar content.
+body:
+  - type: input
+    id: version
+    attributes:
+      label: VRCStage version and Windows version
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps, expected result, actual result
+      description: Include input devices and whether the issue occurs with a generated example avatar.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Remove local user paths, phone IPs and personal data. Do not upload avatar/world packages, tracking profiles or recordings you do not intend to publish.

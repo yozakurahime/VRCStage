@@ -1,0 +1,5 @@
+Ultraleap UnityPlugin 7.3.0, revision 08ea531c78d70364ae13d3a02467bbcb6404d582.
+https://github.com/ultraleap/UnityPlugin
+LeapC.cs copied unchanged from Packages/Tracking/Core/Runtime/Plugins/LeapCSharp.
+Windows LeapC.dll copied from the same revision using Git LFS media endpoint.
+Apache-2.0; see LICENSE.txt. Requires installed Ultraleap Hand Tracking Service and compatible hardware.

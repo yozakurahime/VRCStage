@@ -1,0 +1,1 @@
+{"name":"AvatarLab.Editor","references":["AvatarLab.Core","AvatarLab.Runtime","AvatarLab.Exporter","AvatarLab.PhysicsFixtures","Unity.XR.Management","Unity.XR.Management.Editor","Unity.XR.OpenXR","Unity.XR.OpenXR.Editor","Unity.InputSystem","Klak.Spout.Runtime"],"includePlatforms":["Editor"]}

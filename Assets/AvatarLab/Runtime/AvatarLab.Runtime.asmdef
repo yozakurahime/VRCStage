@@ -1,0 +1,5 @@
+{
+  "name": "AvatarLab.Runtime",
+  "references": ["AvatarLab.Core", "AvatarLab.OpenVR", "AvatarLab.Ultraleap", "Unity.XR.Management", "Unity.XR.OpenXR", "Unity.InputSystem", "Klak.Spout.Runtime"],
+  "autoReferenced": true
+}

@@ -1,0 +1,6 @@
+MediaPipe Hand Landmarker float16 v1: https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+MediaPipe Pose Landmarker Lite float16 v1: https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
+Models stored locally; no runtime download. Apache-2.0, Google MediaPipe.
+SHA256:
+hand_landmarker.task FBC2A30080C3C557093B5DDFC334698132EB341044CCEE322CCF8BCF3607CDE1
+pose_landmarker_lite.task 59929E1D1EE95287735DDD833B19CF4AC46D29BC7AFDDBBF6753C459690D574A

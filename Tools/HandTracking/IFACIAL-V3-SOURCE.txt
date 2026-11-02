@@ -1,0 +1,1 @@
+Official Face Motion v3 receiver, MIT, 82e50f9d0f9f19402d8d2772c9c517f65a0d7a36 https://github.com/emoto-yasushi/iFacialMocap_Facemotion3d_udp-tcp_v3
