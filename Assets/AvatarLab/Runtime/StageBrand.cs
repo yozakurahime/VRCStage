@@ -9,7 +9,7 @@ namespace AvatarLab
     // avatars, tracking profiles, studios and OBS setups must survive the rename.
     public static class StageBrand
     {
-        public const string Name="VRCStage", Version="0.10.0";
+        public const string Name="VRCStage", Version="0.10.1";
         public const string Repository="https://github.com/yozakurahime/VRCStage";
         public static string Executable=>Process.GetCurrentProcess().MainModule.FileName;
         [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern bool SetWindowText(IntPtr window,string text);

@@ -110,7 +110,7 @@ namespace AvatarLab.Editor
                 if(id=="sit") ankle.z=.43f;
                 if(id=="kneel") {ankle.y=.20f;ankle.z=-.35f;foot=Quaternion.Euler(65,0,0);}
                 if(id=="crouch" || id=="crouchwalk") {ankle.x=s*.14f;ankle.z=.10f;}
-                if(id=="walk" || id=="run" || id=="crouchwalk") {float stride=id=="run"?.30f:id=="walk"?.20f:.10f;ankle.z+=-Mathf.Cos(p)*stride;ankle.y+=Mathf.Pow(Mathf.Max(0,Mathf.Sin(p)),2)*(id=="run"?.15f:.075f);}
+                if(id=="walk" || id=="run" || id=="crouchwalk") {float stride=id=="run"?.30f:.20f;ankle.z+=-Mathf.Cos(p)*stride;ankle.y+=Mathf.Pow(Mathf.Max(0,Mathf.Sin(p)),2)*(id=="run"?.15f:id=="crouchwalk"?.045f:.075f);}
                 Leg(left,ankle,foot);
                 var target=new Vector3(s*.28f,.89f,.04f);var hint=new Vector3(s*.38f,1.12f,.25f);var fingers=Vector3.down;var palm=left?Vector3.right:Vector3.left;
                 if(id=="tpose" || id=="apose") {StraightArm(left,id=="tpose"?0:-45);continue;}
@@ -121,7 +121,7 @@ namespace AvatarLab.Editor
                 if(id=="clap") {float gap=Mathf.Lerp(.045f,.18f,(1+Mathf.Cos(phase*2))*.5f);target=new Vector3(s*gap,1.32f,.35f);hint=new Vector3(s*.45f,1.15f,.16f);fingers=Vector3.up;palm=left?Vector3.right:Vector3.left;}
                 if(id=="victory" || id=="stretch") {StraightArm(left,id=="victory"?75:Mathf.Lerp(-80,80,gesture));continue;}
                 if(id=="sit" || id=="kneel" || id=="crouch" || id=="crouchwalk") {target.y-=1-hips.position.y;hint.y-=1-hips.position.y;}
-                if(id=="walk" || id=="run") {target.z+=Mathf.Cos(p)*(id=="run"?.17f:.10f);hint.z+=Mathf.Cos(p)*.1f;}
+                if(id=="walk" || id=="run" || id=="crouchwalk") {target.z+=Mathf.Cos(p)*(id=="run"?.17f:id=="crouchwalk"?.06f:.10f);hint.z+=Mathf.Cos(p)*.1f;}
                 if(id=="dance") {target.y+=.10f+Mathf.Sin(p)*.08f;target.z+=.07f;}
                 Arm(left,target,hint,fingers,palm);
             }

@@ -4,7 +4,7 @@
 
 O VRCStage é um estúdio Windows independente para VTubers. Você exporta o avatar uma vez pelo projeto Unity, abre o arquivo no programa e configura tracking, expressões, cenário e câmera. Depois transmite pelo OBS, sem precisar manter o Unity ou VRChat abertos.
 
-Versão **0.10.0 alpha**, anteriormente AvatarLab Offline. Projeto independente, sem vínculo com a VRChat Inc. A compatibilidade é parcial: o programa usa implementações próprias de física e outros sistemas.
+Versão **0.10.1 alpha**, anteriormente AvatarLab Offline. Projeto independente, sem vínculo com a VRChat Inc. A compatibilidade é parcial: o programa usa implementações próprias de física e outros sistemas.
 
 ## Primeira transmissão
 
@@ -21,7 +21,7 @@ iFacialMocap, mapeamento ARKit/Unified Expressions, voz por microfone, Leap/Ultr
 
 O Leap sobre a mesa acompanha a altura do corpo ao sentar/agachar e mantém a calibração por avatar. Nas poses, deixe **Fixar corpo e mãos durante a prévia** desmarcado para combinar com o tracking.
 
-Câmeras cinematográficas, fotos PNG, luzes, mundos/objetos locais e pós-processamento estão disponíveis. No modo Jogar: **F2** entra/sai, mouse gira, roda dá zoom, WASD move, Shift corre, Espaço pula e Ctrl/C agacha. **Esc** libera o controle.
+Câmeras cinematográficas, fotos PNG, luzes, mundos/objetos locais e pós-processamento estão disponíveis. No modo Jogar: **F2** entra/sai, mouse gira, roda dá zoom, WASD move, Shift corre, Espaço pula e Ctrl/C agacha. **Esc** libera o controle. Em **Movimento**, ajuste aceleração, frenagem e ritmo dos passos. A versão 0.10.1 melhora as transições, o pulo em movimento e a retomada após aterrissar. Veja [locomoção](LOCOMOTION.md).
 
 ## Dados e compatibilidade
 
